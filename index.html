@@ -1,181 +1,111 @@
 <!DOCTYPE html>
-<html lang="id">
+<html>
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>P2P Chat Stable - Mahmuda</title>
+    <title>Chat P2P - Mahmuda</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
 </head>
-<body class="bg-slate-900 h-screen flex items-center justify-center p-2 font-sans overflow-hidden text-slate-800">
+<body class="bg-gray-100 p-5 flex flex-col items-center font-sans">
 
-    <!-- LOGIN SCREEN -->
-    <div id="loginScreen" class="w-full max-w-md bg-white p-8 rounded-3xl shadow-2xl">
-        <div class="text-center mb-8">
-            <h1 class="text-3xl font-black text-[#008069]">P2P CHAT</h1>
-            <p class="text-gray-400 text-[10px] font-bold uppercase tracking-widest mt-1">Status: Network Synced</p>
-        </div>
-        <div class="space-y-4">
-            <input type="text" id="nameInput" class="w-full p-4 bg-gray-100 rounded-2xl outline-none border-2 border-transparent focus:border-[#00a884]" placeholder="Nama Anda">
-            <input type="text" id="roomInput" class="w-full p-4 bg-gray-100 rounded-2xl outline-none border-2 border-transparent focus:border-[#00a884]" placeholder="Kunci Ruangan">
-            <button onclick="joinChat()" class="w-full bg-[#00a884] text-white p-4 rounded-2xl font-bold hover:bg-[#008069] shadow-lg active:scale-95 uppercase transition-all">Masuk Obrolan</button>
-        </div>
+    <div id="setup" class="bg-white p-6 rounded-lg shadow-md w-full max-w-sm">
+        <h2 class="text-xl font-bold mb-4 text-center">Masuk Chat</h2>
+        <input type="text" id="name" placeholder="Nama" class="w-full border p-2 mb-2 rounded">
+        <input type="text" id="room" placeholder="Kode Ruang" class="w-full border p-2 mb-4 rounded">
+        <button onclick="start()" class="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600">Gabung</button>
     </div>
 
-    <!-- CHAT INTERFACE -->
-    <div id="chatScreen" class="hidden w-full max-w-md bg-[#f0f2f5] h-[95vh] flex flex-col rounded-3xl overflow-hidden shadow-2xl relative">
-        <div class="bg-[#008069] p-4 text-white flex justify-between items-center z-10 shadow-md">
-            <div class="flex items-center gap-3">
-                <div id="avatar" class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center font-bold border border-white/30 text-xl uppercase italic">M</div>
-                <div>
-                    <h1 id="currentRoom" class="font-bold text-sm leading-none italic">Room</h1>
-                    <p id="status" class="text-[10px] opacity-80 mt-1 italic font-medium uppercase tracking-tighter">Negosiasi Jalur...</p>
-                </div>
-            </div>
-            <span id="connCount" class="text-[10px] bg-black/20 px-3 py-1 rounded-full border border-white/10 font-bold">0 Online</span>
+    <div id="main" class="hidden w-full max-w-md bg-white rounded-lg shadow-lg flex flex-col h-[80vh]">
+        <div class="bg-blue-600 p-4 text-white rounded-t-lg flex justify-between">
+            <span id="roomTitle">Ruang</span>
+            <span id="status" class="text-xs uppercase font-bold">Offline</span>
         </div>
-
-        <div id="chatBox" class="flex-1 overflow-y-auto p-4 flex flex-col gap-2 bg-[#e5ddd5]" style="background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png'); background-blend-mode: overlay;"></div>
-
-        <div class="p-4 bg-[#f0f2f5] flex items-center gap-3 border-t">
-            <input type="text" id="msgInp" class="flex-1 p-3 rounded-2xl outline-none text-sm shadow-inner disabled:bg-gray-100" placeholder="Ketik pesan..." disabled>
-            <button id="sendBtn" onclick="sendTxt()" class="bg-[#00a884] text-white p-3 rounded-2xl shadow-md disabled:opacity-30 active:scale-90 transition-all" disabled>
-                <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path></svg>
-            </button>
+        <div id="box" class="flex-1 p-4 overflow-y-auto bg-gray-50 space-y-2 text-sm"></div>
+        <div class="p-3 border-t flex gap-2">
+            <input type="text" id="msg" class="flex-1 border p-2 rounded" placeholder="Ketik...">
+            <button onclick="send()" class="bg-green-500 text-white px-4 py-2 rounded">Kirim</button>
         </div>
     </div>
 
     <script>
-        // Konfigurasi Database Singapore Mahmuda
-        const firebaseConfig = {
+        const config = {
             apiKey: "AIzaSyCkXFfGeA2KuDqNoNU5A7Q-FPLI-YpURHk",
             authDomain: "realtime-database-f4102.firebaseapp.com",
             databaseURL: "https://realtime-database-f4102-default-rtdb.asia-southeast1.firebasedatabase.app",
-            projectId: "realtime-database-f4102",
-            appId: "1:433163571380:web:ad65f64f7b5f892c5d07e1"
+            projectId: "realtime-database-f4102"
         };
-        firebase.initializeApp(firebaseConfig);
+        firebase.initializeApp(config);
         const db = firebase.database();
-        
-        let myId = Math.random().toString(36).substring(7);
-        let myName, myRoom, peers = {};
+        let myId = Math.random().toString(36).substr(7), myName, myRoom, peers = {};
 
-        function joinChat() {
-            myName = document.getElementById('nameInput').value.trim();
-            myRoom = document.getElementById('roomInput').value.trim();
-            if(!myName || !myRoom) return alert("Isi Nama & Ruangan!");
-            document.getElementById('loginScreen').classList.add('hidden');
-            document.getElementById('chatScreen').classList.remove('hidden');
-            document.getElementById('avatar').innerText = myName[0];
-            document.getElementById('currentRoom').innerText = "Ruang: " + myRoom;
-            startP2P();
-        }
+        function start() {
+            myName = document.getElementById('name').value;
+            myRoom = document.getElementById('room').value;
+            if(!myName || !myRoom) return;
+            document.getElementById('setup').classList.add('hidden');
+            document.getElementById('main').classList.remove('hidden');
+            document.getElementById('roomTitle').innerText = "Ruang: " + myRoom;
 
-        function startP2P() {
-            const signalsRef = db.ref(`signals/${myRoom}/${myId}`);
-            const presenceRef = db.ref(`presence/${myRoom}/${myId}`);
-
-            signalsRef.on('child_added', async (snap) => {
-                const data = snap.val();
-                if (data.type === 'offer') {
-                    const pc = setupPeer(data.from, false);
-                    await pc.setRemoteDescription(new RTCSessionDescription(data.sdp));
-                    const ans = await pc.createAnswer();
+            // Signaling
+            db.ref(`signals/${myRoom}/${myId}`).on('child_added', async snap => {
+                let d = snap.val();
+                if(d.type === 'offer') {
+                    let pc = getPC(d.from, false);
+                    await pc.setRemoteDescription(new RTCSessionDescription(d.sdp));
+                    let ans = await pc.createAnswer();
                     await pc.setLocalDescription(ans);
-                    db.ref(`signals/${myRoom}/${data.from}`).push({ from: myId, type: 'answer', sdp: ans });
-                } else if (data.type === 'answer') {
-                    if (peers[data.from]) await peers[data.from].pc.setRemoteDescription(new RTCSessionDescription(data.sdp));
-                } else if (data.type === 'ice') {
-                    if (peers[data.from]) peers[data.from].pc.addIceCandidate(new RTCIceCandidate(data.ice)).catch(e=>{});
+                    db.ref(`signals/${myRoom}/${d.from}`).push({from:myId, type:'answer', sdp:ans});
+                } else if(d.type === 'answer') {
+                    if(peers[d.from]) await peers[d.from].pc.setRemoteDescription(new RTCSessionDescription(d.sdp));
+                } else if(d.type === 'ice') {
+                    if(peers[d.from]) peers[d.from].pc.addIceCandidate(new RTCIceCandidate(d.ice));
                 }
-                snap.ref.remove(); 
+                snap.ref.remove();
             });
 
-            presenceRef.set({ name: myName });
-            presenceRef.onDisconnect().remove();
-
-            db.ref(`presence/${myRoom}`).on('value', (snap) => {
-                const list = snap.val() || {};
-                document.getElementById('connCount').innerText = Object.keys(list).length + " Online";
-                Object.keys(list).forEach(peerId => {
-                    if (peerId !== myId && !peers[peerId]) setupPeer(peerId, myId < peerId);
+            db.ref(`presence/${myRoom}`).on('value', snap => {
+                let list = snap.val() || {};
+                Object.keys(list).forEach(id => {
+                    if(id !== myId && !peers[id]) getPC(id, myId < id);
                 });
             });
+            db.ref(`presence/${myRoom}/${myId}`).set(true).then(() => {
+                db.ref(`presence/${myRoom}/${myId}`).onDisconnect().remove();
+            });
         }
 
-        function setupPeer(peerId, isCaller) {
-            const pc = new RTCPeerConnection({
-                iceServers: [
-                    { urls: "stun:stun.l.google.com:19302" },
-                    // Memaksa TCP Relay untuk menembus proteksi mDNS/Firewall
-                    { urls: "turn:openrelay.metered.ca:443?transport=tcp", username: "openrelayproject", credential: "openrelayproject" }
-                ],
-                iceCandidatePoolSize: 10
-            });
+        function getPC(id, caller) {
+            let pc = new RTCPeerConnection({ iceServers: [{urls:"stun:stun.l.google.com:19302"}] });
+            let dc = pc.createDataChannel("chat", {negotiated:true, id:0});
+            peers[id] = {pc, dc};
 
-            peers[peerId] = { pc: pc, dc: null };
-            
-            // Konfigurasi DataChannel yang lebih longgar agar mudah terhubung
-            const dc = pc.createDataChannel("chat", { negotiated: true, id: 0 });
-            
-            dc.onopen = () => updateUI();
-            dc.onclose = () => { delete peers[peerId]; updateUI(); };
-            dc.onmessage = (e) => {
-                const data = JSON.parse(e.data);
-                appendMsg(data.u, data.t, 'inbound');
-            };
-            peers[peerId].dc = dc;
-
-            pc.onicecandidate = (e) => {
-                if (e.candidate) db.ref(`signals/${myRoom}/${peerId}`).push({ from: myId, type: 'ice', ice: e.candidate });
+            dc.onopen = () => document.getElementById('status').innerText = "Online";
+            dc.onmessage = e => addMsg(JSON.parse(e.data).u, JSON.parse(e.data).t, 'in');
+            pc.onicecandidate = e => {
+                if(e.candidate) db.ref(`signals/${myRoom}/${id}`).push({from:myId, type:'ice', ice:e.candidate});
             };
 
-            pc.onconnectionstatechange = () => updateUI();
-
-            if (isCaller) {
+            if(caller) {
                 pc.createOffer().then(o => pc.setLocalDescription(o)).then(() => {
-                    db.ref(`signals/${myRoom}/${peerId}`).push({ from: myId, type: 'offer', sdp: pc.localDescription });
+                    db.ref(`signals/${myRoom}/${id}`).push({from:myId, type:'offer', sdp:pc.localDescription});
                 });
             }
             return pc;
         }
 
-        function updateUI() {
-            let active = 0;
-            for(let id in peers) if(peers[id].dc && peers[id].dc.readyState === 'open') active++;
-            const statusEl = document.getElementById('status');
-            const inp = document.getElementById('msgInp');
-            const btn = document.getElementById('sendBtn');
-            if (active > 0) {
-                statusEl.innerText = "TERHUBUNG (" + active + ")";
-                statusEl.className = "text-[10px] text-yellow-400 font-black animate-pulse uppercase";
-                inp.disabled = false; btn.disabled = false;
-            } else {
-                statusEl.innerText = "Menunggu Sinyal...";
-                statusEl.className = "text-[10px] opacity-80 italic uppercase";
-                inp.disabled = true; btn.disabled = true;
-            }
-        }
-
-        function sendTxt() {
-            const inp = document.getElementById('msgInp');
-            if(!inp.value.trim()) return;
-            const msg = JSON.stringify({ u: myName, t: inp.value });
-            Object.values(peers).forEach(p => { if (p.dc && p.dc.readyState === 'open') p.dc.send(msg); });
-            appendMsg(myName, inp.value, 'outbound');
+        function send() {
+            let inp = document.getElementById('msg');
+            let data = {u:myName, t:inp.value};
+            Object.values(peers).forEach(p => p.dc.readyState === 'open' && p.dc.send(JSON.stringify(data)));
+            addMsg(myName, inp.value, 'out');
             inp.value = "";
         }
 
-        function appendMsg(u, t, side) {
-            const box = document.getElementById('chatBox');
-            const div = document.createElement('div');
-            div.className = side === 'outbound' 
-                ? "bg-[#dcf8c6] self-end p-3 rounded-2xl rounded-tr-none shadow-sm text-sm max-w-[85%] mb-1 border-l-4 border-[#00a884]" 
-                : "bg-white self-start p-3 rounded-2xl rounded-tl-none shadow-sm text-sm max-w-[85%] mb-1 border-l-4 border-blue-500";
-            div.innerHTML = `<b class="text-[10px] block text-gray-400 uppercase mb-1">${u}</b><p>${t}</p>`;
-            box.appendChild(div);
-            box.scrollTop = box.scrollHeight;
+        function addMsg(u, t, s) {
+            let b = document.getElementById('box');
+            b.innerHTML += `<div class="${s==='out'?'text-right':''} mb-2"><b>${u}:</b> ${t}</div>`;
+            b.scrollTop = b.scrollHeight;
         }
     </script>
 </body>
