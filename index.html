@@ -3,16 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>P2P Private Chat - Mahmuda</title>
+    <title>P2P Chat - Mahmuda Professional</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
-    <style>
-        body { background-color: #0f172a; }
-        #chatBox { background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png'); background-blend-mode: overlay; }
-    </style>
 </head>
-<body class="h-screen flex items-center justify-center p-2 font-sans">
+<body class="bg-slate-900 h-screen flex items-center justify-center p-2 font-sans">
 
     <!-- LOGIN SCREEN -->
     <div id="loginScreen" class="w-full max-w-md bg-white p-8 rounded-3xl shadow-2xl transition-all">
@@ -23,7 +19,7 @@
         <div class="space-y-4">
             <input type="text" id="nameInput" class="w-full p-4 bg-gray-100 rounded-2xl outline-none border-2 border-transparent focus:border-[#00a884]" placeholder="Nama Anda">
             <input type="text" id="roomInput" class="w-full p-4 bg-gray-100 rounded-2xl outline-none border-2 border-transparent focus:border-[#00a884]" placeholder="Kunci Ruangan">
-            <button onclick="joinChat()" class="w-full bg-[#00a884] text-white p-4 rounded-2xl font-bold hover:bg-[#008069] shadow-lg active:scale-95 uppercase">Masuk Obrolan</button>
+            <button onclick="joinChat()" class="w-full bg-[#00a884] text-white p-4 rounded-2xl font-bold hover:bg-[#008069] shadow-lg active:scale-95 uppercase transition-all">Masuk Obrolan</button>
         </div>
     </div>
 
@@ -42,11 +38,11 @@
             </div>
         </div>
 
-        <div id="chatBox" class="flex-1 overflow-y-auto p-4 flex flex-col gap-3 bg-[#e5ddd5]"></div>
+        <div id="chatBox" class="flex-1 overflow-y-auto p-4 flex flex-col gap-3 bg-[#e5ddd5]" style="background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png'); background-blend-mode: overlay;"></div>
 
         <div class="p-4 bg-[#f0f2f5] flex items-center gap-3 border-t">
             <input type="text" id="msgInp" class="flex-1 p-3 rounded-2xl outline-none text-sm shadow-inner disabled:bg-gray-200" placeholder="Ketik pesan..." disabled>
-            <button id="sendBtn" onclick="sendTxt()" class="bg-[#00a884] text-white p-3 rounded-2xl shadow-md disabled:opacity-30" disabled>
+            <button id="sendBtn" onclick="sendTxt()" class="bg-[#00a884] text-white p-3 rounded-2xl shadow-md disabled:opacity-30 transition-all active:scale-90" disabled>
                 <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path></svg>
             </button>
         </div>
@@ -71,7 +67,7 @@
             myRoom = document.getElementById('roomInput').value.trim();
             if(!myName || !myRoom) return alert("Isi Nama & Kunci!");
 
-            document.getElementById('loginScreen').style.display = 'none';
+            document.getElementById('loginScreen').classList.add('hidden');
             document.getElementById('chatScreen').classList.remove('hidden');
             document.getElementById('avatar').innerText = myName[0];
             document.getElementById('currentRoom').innerText = "Room: " + myRoom;
@@ -116,6 +112,7 @@
                 iceServers: [
                     { urls: "stun:stun.l.google.com:19302" },
                     { urls: "stun:stun1.l.google.com:19302" },
+                    // TURN Server Relay - Menembus Firewall ketat
                     { urls: "turn:openrelay.metered.ca:80", username: "openrelayproject", credential: "openrelayproject" },
                     { urls: "turn:openrelay.metered.ca:443", username: "openrelayproject", credential: "openrelayproject" }
                 ],
@@ -124,7 +121,7 @@
 
             peers[peerId] = { pc: pc, dc: null };
 
-            // Negotiated Data Channel (Paksa sambung di ID 0)
+            // Forced Data Channel
             const dc = pc.createDataChannel("chat", { negotiated: true, id: 0 });
             
             dc.onopen = () => updateUI();
@@ -164,7 +161,7 @@
                 inp.disabled = false;
                 btn.disabled = false;
             } else {
-                statusEl.innerText = "Mencari Jalur...";
+                statusEl.innerText = "Mencari Jalur P2P...";
                 statusEl.className = "text-[10px] opacity-80 italic";
                 inp.disabled = true;
                 btn.disabled = true;
