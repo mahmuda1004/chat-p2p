@@ -1,309 +1,147 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="id">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>P2P Auto Group - Mahmuda</title>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>P2P Chat - Mahmuda</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Library Firebase versi Compat (Lebih stabil untuk pemula) -->
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
     <style>
-      .chat-bg {
-        background-image: url("https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png");
-        background-size: contain;
-      }
-      .bubble-out {
-        background-color: #dcf8c6;
-        border-radius: 12px 0 12px 12px;
-        align-self: flex-end;
-        box-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
-      }
-      .bubble-in {
-        background-color: white;
-        border-radius: 0 12px 12px 12px;
-        align-self: flex-start;
-        box-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
-      }
+        .chat-bg { background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png'); background-size: contain; }
+        .bubble-out { background-color: #dcf8c6; border-radius: 12px 0 12px 12px; align-self: flex-end; shadow-sm; }
+        .bubble-in { background-color: white; border-radius: 0 12px 12px 12px; align-self: flex-start; shadow-sm; }
     </style>
-  </head>
-  <body class="bg-[#dadbd3] h-screen flex flex-col items-center">
-    <div
-      class="w-full max-w-md bg-[#f0f2f5] flex flex-col h-full shadow-2xl relative"
-    >
-      <!-- HEADER -->
-      <div
-        class="bg-[#008069] p-4 text-white flex justify-between items-center z-20 shadow-md"
-      >
-        <div class="flex items-center gap-3">
-          <div
-            id="avatar"
-            class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center font-bold uppercase text-lg"
-          >
-            ?
-          </div>
-          <div>
-            <h1 id="userNameDisplay" class="font-bold text-sm">
-              Grup P2P Otomatis
-            </h1>
-            <p id="status" class="text-[10px] opacity-80 italic">
-              Menghubungkan...
-            </p>
-          </div>
+</head>
+<body class="bg-[#dadbd3] h-screen flex flex-col items-center">
+
+    <div class="w-full max-w-md bg-[#f0f2f5] flex flex-col h-full shadow-2xl relative">
+        <div class="bg-[#008069] p-4 text-white flex justify-between items-center z-20 shadow-md">
+            <div class="flex items-center gap-3">
+                <div id="avatar" class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center font-bold uppercase">?</div>
+                <div>
+                    <h1 id="userNameDisplay" class="font-bold text-sm">Grup P2P</h1>
+                    <p id="status" class="text-[10px] opacity-80 italic">Mencari koneksi...</p>
+                </div>
+            </div>
+            <span id="connCount" class="text-[10px] bg-black/20 px-2 py-1 rounded-full">0 Online</span>
         </div>
-        <span
-          id="connCount"
-          class="text-[10px] bg-black/20 px-2 py-1 rounded-full"
-          >0 Online</span
-        >
-      </div>
 
-      <!-- CHAT BOX -->
-      <div
-        id="chatBox"
-        class="flex-1 overflow-y-auto p-4 chat-bg flex flex-col gap-2"
-      ></div>
+        <div id="chatBox" class="flex-1 overflow-y-auto p-4 chat-bg flex flex-col gap-2"></div>
 
-      <!-- INPUT PANEL -->
-      <div class="p-2 bg-[#f0f2f5] flex items-center gap-2 border-t">
-        <label
-          class="cursor-pointer p-2 text-gray-500 hover:bg-gray-200 rounded-full transition"
-        >
-          <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
-            <path
-              d="M16.5 6v11.5c0 2.21-1.79 4-4 4s-4-1.79-4-4V5c0-1.38 1.12-2.5 2.5-2.5s2.5 1.12 2.5 2.5v10.5c0 .55-.45 1-1 1s-1-.45-1-1V6H10v9.5c0 1.38 1.12 2.5 2.5 2.5s2.5-1.12 2.5-2.5V5c0-2.21-1.79-4-4-4S7 2.79 7 5v12.5c0 3.04 2.46 5.5 5.5 5.5s5.5-2.46 5.5-5.5V6h-1.5z"
-            />
-          </svg>
-          <input
-            type="file"
-            id="imgInp"
-            accept="image/*"
-            class="hidden"
-            onchange="sendImg(this)"
-          />
-        </label>
-        <input
-          type="text"
-          id="msgInp"
-          class="flex-1 p-2 rounded-full outline-none text-sm shadow-sm"
-          placeholder="Ketik pesan"
-        />
-        <button
-          onclick="sendTxt()"
-          class="bg-[#00a884] text-white p-3 rounded-full shadow-md active:scale-95 transition"
-        >
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
-            <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path>
-          </svg>
-        </button>
-      </div>
+        <div class="p-2 bg-[#f0f2f5] flex items-center gap-2 border-t">
+            <input type="text" id="msgInp" class="flex-1 p-2 rounded-full outline-none text-sm shadow-sm" placeholder="Ketik pesan">
+            <button onclick="sendTxt()" class="bg-[#00a884] text-white p-3 rounded-full shadow-md active:scale-95">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path></svg>
+            </button>
+        </div>
     </div>
 
     <script>
-      // --- CONFIG FIREBASE MILIK MAHMUDA ---
-      const firebaseConfig = {
-        apiKey: "AIzaSyCkXFfGeA2KuDqNoNU5A7Q-FPLI-YpURHk",
-        authDomain: "realtime-database-f4102.firebaseapp.com",
-        databaseURL:
-          "https://realtime-database-f4102-default-rtdb.asia-southeast1.firebasedatabase.app",
-        projectId: "realtime-database-f4102",
-        storageBucket: "realtime-database-f4102.firebasestorage.app",
-        messagingSenderId: "433163571380",
-        appId: "1:433163571380:web:ad65f64f7b5f892c5d07e1",
-        measurementId: "G-6P2XERK9QL",
-      };
-
-      // Inisialisasi Firebase
-      firebase.initializeApp(firebaseConfig);
-      const db = firebase.database();
-
-      // ID Unik untuk setiap tab/user
-      const myId = Math.random().toString(36).substring(7);
-      let myName =
-        localStorage.getItem("p2p_name") ||
-        prompt("Masukkan Nama Kamu:") ||
-        "User-" + myId;
-      localStorage.setItem("p2p_name", myName);
-
-      document.getElementById("userNameDisplay").innerText = myName;
-      document.getElementById("avatar").innerText = myName[0];
-
-      const peers = {}; // Menyimpan data koneksi peer
-
-      // 1. SIGNALING: Mendengarkan permintaan koneksi
-      db.ref("signals").on("child_added", async (snap) => {
-        const data = snap.val();
-        if (data.to === myId) {
-          if (data.type === "offer") await handleOffer(data);
-          if (data.type === "answer") await handleAnswer(data);
-          if (data.type === "ice") handleIce(data);
-          snap.ref.remove(); // Bersihkan signal setelah dibaca
-        }
-      });
-
-      // 2. PRESENCE: Memberitahu orang lain saya online
-      db.ref("presence").on("child_added", (snap) => {
-        const userId = snap.key;
-        if (userId !== myId && !peers[userId]) {
-          initConnection(userId, true); // Saya ajak kenalan
-        }
-      });
-
-      // Daftarkan diri ke daftar online
-      const myPresenceRef = db.ref("presence/" + myId);
-      myPresenceRef.set(true);
-      myPresenceRef.onDisconnect().remove();
-
-      // 3. WEBRTC LOGIC
-      async function initConnection(peerId, isOffer) {
-        const pc = new RTCPeerConnection({
-          iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
-        });
-        peers[peerId] = { pc, dc: null };
-
-        pc.onicecandidate = (e) => {
-          if (e.candidate) sendSignal(peerId, "ice", e.candidate);
+        const firebaseConfig = {
+            apiKey: "AIzaSyCkXFfGeA2KuDqNoNU5A7Q-FPLI-YpURHk",
+            authDomain: "realtime-database-f4102.firebaseapp.com",
+            databaseURL: "https://realtime-database-f4102-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "realtime-database-f4102",
+            storageBucket: "realtime-database-f4102.firebasestorage.app",
+            messagingSenderId: "433163571380",
+            appId: "1:433163571380:web:ad65f64f7b5f892c5d07e1"
         };
 
-        if (isOffer) {
-          const dc = pc.createDataChannel("chat");
-          setupDC(dc, peerId);
-          const offer = await pc.createOffer();
-          await pc.setLocalDescription(offer);
-          sendSignal(peerId, "offer", offer);
-        } else {
-          pc.ondatachannel = (e) => setupDC(e.channel, peerId);
-        }
-      }
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+        const myId = Math.random().toString(36).substring(7);
+        let myName = localStorage.getItem('p2p_name') || prompt("Nama Anda:") || "User";
+        localStorage.setItem('p2p_name', myName);
+        
+        document.getElementById('userNameDisplay').innerText = myName;
+        document.getElementById('avatar').innerText = myName[0];
 
-      async function handleOffer(data) {
-        if (!peers[data.from]) await initConnection(data.from, false);
-        const pc = peers[data.from].pc;
-        await pc.setRemoteDescription(new RTCSessionDescription(data.sdp));
-        const ans = await pc.createAnswer();
-        await pc.setLocalDescription(ans);
-        sendSignal(data.from, "answer", ans);
-      }
+        const peers = {};
 
-      async function handleAnswer(data) {
-        const pc = peers[data.from]?.pc;
-        if (pc)
-          await pc.setRemoteDescription(new RTCSessionDescription(data.sdp));
-      }
-
-      function handleIce(data) {
-        const pc = peers[data.from]?.pc;
-        if (pc) pc.addIceCandidate(new RTCIceCandidate(data.ice));
-      }
-
-      function sendSignal(to, type, content) {
-        const signal = { from: myId, to, type };
-        if (type === "ice") signal.ice = content;
-        else signal.sdp = content;
-        db.ref("signals").push(signal);
-      }
-
-      function setupDC(dc, peerId) {
-        peers[peerId].dc = dc;
-        dc.onopen = () => updateStatus();
-        dc.onclose = () => {
-          delete peers[peerId];
-          updateStatus();
-        };
-        dc.onmessage = (e) => {
-          const msg = JSON.parse(e.data);
-          if (msg.type === "ack") markRead(msg.id);
-          else {
-            appendMsg(msg.user, msg.text, "inbound", msg.style, msg.id);
-            dc.send(JSON.stringify({ type: "ack", id: msg.id }));
-          }
-        };
-      }
-
-      function updateStatus() {
-        const count = Object.values(peers).filter(
-          (p) => p.dc?.readyState === "open",
-        ).length;
-        document.getElementById("connCount").innerText = count + " Online";
-        document.getElementById("status").innerText =
-          count > 0 ? "Terhubung ke Grup" : "Mencari teman...";
-      }
-
-      // 4. UI & MESSAGING
-      function sendTxt() {
-        const inp = document.getElementById("msgInp");
-        if (!inp.value.trim()) return;
-        const id = "m" + Date.now();
-        const msgData = { id, user: myName, text: inp.value, style: "text" };
-        broadcast(msgData);
-        appendMsg(myName, inp.value, "outbound", "text", id);
-        inp.value = "";
-      }
-
-      function sendImg(inp) {
-        const file = inp.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          const id = "i" + Date.now();
-          const msgData = {
-            id,
-            user: myName,
-            text: e.target.result,
-            style: "image",
-          };
-          broadcast(msgData);
-          appendMsg(myName, e.target.result, "outbound", "image", id);
-        };
-        reader.readAsDataURL(file);
-      }
-
-      function broadcast(data) {
-        Object.values(peers).forEach((p) => {
-          if (p.dc?.readyState === "open") p.dc.send(JSON.stringify(data));
-        });
-      }
-
-      function appendMsg(user, text, side, style, id) {
-        if (document.getElementById(id)) return;
-        const box = document.getElementById("chatBox");
-        const div = document.createElement("div");
-        div.id = id;
-        div.className = `${side === "outbound" ? "bubble-out" : "bubble-in"} p-2 max-w-[85%] mb-2 flex flex-col`;
-
-        const content =
-          style === "image"
-            ? `<img src="${text}" class="rounded-lg max-w-full">`
-            : `<p class="text-[13px]">${text}</p>`;
-        const time = new Date().toLocaleTimeString([], {
-          hour: "2-digit",
-          minute: "2-digit",
+        // 1. SIGNALING: Jalur Kotak Surat Pribadi (Biar Gak Nyangkut)
+        db.ref('signals/' + myId).on('child_added', async (snap) => {
+            const data = snap.val();
+            if (data.type === 'offer') {
+                const pc = setupPeer(data.from, false);
+                await pc.setRemoteDescription(new RTCSessionDescription(data.sdp));
+                const ans = await pc.createAnswer();
+                await pc.setLocalDescription(ans);
+                db.ref('signals/' + data.from).push({ from: myId, type: 'answer', sdp: ans });
+            } else if (data.type === 'answer') {
+                await peers[data.from].pc.setRemoteDescription(new RTCSessionDescription(data.sdp));
+            } else if (data.type === 'ice') {
+                peers[data.from].pc.addIceCandidate(new RTCIceCandidate(data.ice));
+            }
+            snap.ref.remove();
         });
 
-        div.innerHTML = `
-                ${side === "inbound" ? `<span class="text-[10px] font-bold text-[#008069] mb-0.5">${user}</span>` : ""}
-                <div class="pr-2">${content}</div>
-                <div class="text-[9px] text-gray-500 text-right mt-1">${time} <span class="check">✓</span></div>
-            `;
-        box.appendChild(div);
-        box.scrollTop = box.scrollHeight;
-      }
+        // 2. PRESENCE: Daftar Online
+        db.ref('presence/' + myId).set(true);
+        db.ref('presence/' + myId).onDisconnect().remove();
 
-      function markRead(id) {
-        const el = document.getElementById(id);
-        if (el) {
-          const check = el.querySelector(".check");
-          if (check) {
-            check.innerText = "✓✓";
-            check.style.color = "#34b7f1";
-          }
+        db.ref('presence').on('child_added', (snap) => {
+            if (snap.key !== myId && !peers[snap.key]) setupPeer(snap.key, true);
+        });
+
+        // 3. WEBRTC ENGINE
+        function setupPeer(peerId, isOffer) {
+            const pc = new RTCPeerConnection({ iceServers: [{ urls: "stun:stun.l.google.com:19302" }] });
+            peers[peerId] = { pc, dc: null };
+
+            pc.onicecandidate = (e) => {
+                if (e.candidate) db.ref('signals/' + peerId).push({ from: myId, type: 'ice', ice: e.candidate });
+            };
+
+            if (isOffer) {
+                const dc = pc.createDataChannel("chat");
+                setupDC(dc, peerId);
+                pc.createOffer().then(o => {
+                    pc.setLocalDescription(o);
+                    db.ref('signals/' + peerId).push({ from: myId, type: 'offer', sdp: o });
+                });
+            } else {
+                pc.ondatachannel = (e) => setupDC(e.channel, peerId);
+            }
+            return pc;
         }
-      }
 
-      // Tekan Enter untuk kirim
-      document.getElementById("msgInp").addEventListener("keypress", (e) => {
-        if (e.key === "Enter") sendTxt();
-      });
+        function setupDC(dc, peerId) {
+            peers[peerId].dc = dc;
+            dc.onopen = () => { updateUI(); console.log("Connected to: " + peerId); };
+            dc.onclose = () => { delete peers[peerId]; updateUI(); };
+            dc.onmessage = (e) => {
+                const msg = JSON.parse(e.data);
+                appendMsg(msg.u, msg.t, 'inbound');
+            };
+        }
+
+        function updateUI() {
+            const count = Object.values(peers).filter(p => p.dc?.readyState === 'open').length;
+            document.getElementById('connCount').innerText = count + " Online";
+            document.getElementById('status').innerText = count > 0 ? "Terhubung ke Grup" : "Mencari teman...";
+        }
+
+        function sendTxt() {
+            const inp = document.getElementById('msgInp');
+            if (!inp.value.trim()) return;
+            const msg = { u: myName, t: inp.value };
+            Object.values(peers).forEach(p => p.dc?.readyState === 'open' && p.dc.send(JSON.stringify(msg)));
+            appendMsg(myName, inp.value, 'outbound');
+            inp.value = "";
+        }
+
+        function appendMsg(user, text, side) {
+            const box = document.getElementById('chatBox');
+            const div = document.createElement('div');
+            div.className = `${side === 'outbound' ? 'bubble-out' : 'bubble-in'} p-2 max-w-[85%] mb-2 flex flex-col shadow-sm`;
+            div.innerHTML = `<span class="text-[10px] font-bold ${side === 'outbound' ? 'text-green-700' : 'text-blue-700'}">${user}</span>
+                             <p class="text-[13px]">${text}</p>`;
+            box.appendChild(div);
+            box.scrollTop = box.scrollHeight;
+        }
+
+        document.getElementById('msgInp').addEventListener('keypress', (e) => { if(e.key === 'Enter') sendTxt(); });
     </script>
-  </body>
+</body>
 </html>
