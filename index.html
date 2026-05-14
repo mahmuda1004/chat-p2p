@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>P2P Manual Ultra - Mahmuda</title>
+    <title>P2P Manual Pro - Mahmuda</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body { background-color: #0f172a; }
@@ -11,8 +11,7 @@
             background-image: url("https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png");
             background-blend-mode: overlay;
         }
-        #box::-webkit-scrollbar { width: 4px; }
-        #box::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 10px; }
+        .hide-scroll::-webkit-scrollbar { width: 0px; background: transparent; }
     </style>
 </head>
 <body class="h-screen flex items-center justify-center p-2 font-sans overflow-hidden">
@@ -20,40 +19,47 @@
     <!-- LOGIN SCREEN -->
     <div id="loginScreen" class="w-full max-w-md bg-white p-8 rounded-3xl shadow-2xl">
         <div class="text-center mb-8">
-            <h1 class="text-3xl font-black text-[#008069]">P2P MANUAL</h1>
-            <p class="text-gray-400 text-[10px] font-bold uppercase tracking-widest mt-1">Manual Signaling Mode</p>
+            <h1 class="text-3xl font-black text-[#008069]">P2P PRO</h1>
+            <p class="text-gray-400 text-[10px] font-bold uppercase tracking-widest mt-1">Manual Direct Connection</p>
         </div>
         <div class="space-y-4">
             <input type="text" id="nameInput" class="w-full p-4 bg-gray-100 rounded-2xl outline-none border-2 border-transparent focus:border-[#00a884]" placeholder="Nama Anda" />
-            <button onclick="joinChat()" class="w-full bg-[#00a884] text-white p-4 rounded-2xl font-bold hover:bg-[#008069] shadow-lg active:scale-95 uppercase transition-all">Masuk Obrolan</button>
+            <button onclick="joinChat()" class="w-full bg-[#00a884] text-white p-4 rounded-2xl font-bold hover:bg-[#008069] active:scale-95 uppercase transition-all shadow-lg">Mulai Chat</button>
         </div>
     </div>
 
     <!-- CHAT INTERFACE -->
     <div id="chatScreen" class="hidden w-full max-w-md bg-[#f0f2f5] h-[95vh] flex flex-col rounded-3xl overflow-hidden shadow-2xl relative">
         <!-- Header -->
-        <div class="bg-[#008069] p-4 text-white flex justify-between items-center z-10 shadow-md">
+        <div class="bg-[#008069] p-4 text-white flex justify-between items-center z-20 shadow-md">
             <div class="flex items-center gap-3">
-                <div id="avatar" class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center font-bold border border-white/30 text-xl uppercase italic">M</div>
+                <div id="avatar" class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center font-bold border border-white/30 text-xl uppercase italic text-white">M</div>
                 <div>
                     <h1 id="userNameDisplay" class="font-bold text-sm leading-none italic">User</h1>
-                    <p id="status" class="text-[10px] opacity-80 mt-1 italic font-medium">Offline (Gunakan Kode Sinyal)</p>
+                    <p id="status" class="text-[10px] opacity-80 mt-1 italic font-medium uppercase tracking-tighter">Offline</p>
                 </div>
             </div>
-            <span id="connCount" class="text-[10px] bg-black/20 px-3 py-1 rounded-full border border-white/10 font-bold">P2P Direct</span>
+            <div class="flex gap-2">
+                <button onclick="toggleSignal()" class="p-2 bg-white/10 rounded-full hover:bg-white/20 font-bold text-xl" title="Tambah Teman">+</button>
+                <button onclick="confirmReset()" class="p-2 bg-red-500/20 rounded-full hover:bg-red-500/40 text-[10px] font-bold px-3">RESET</button>
+            </div>
         </div>
 
-        <!-- Manual Signaling Box (Area Baru) -->
-        <div class="p-3 bg-[#e5ddd5] border-b border-gray-300">
-            <textarea id="signalInp" class="w-full h-16 text-[9px] p-2 rounded-xl border-none shadow-inner bg-white/80 focus:bg-white outline-none font-mono" placeholder="Tempel kode di sini..."></textarea>
+        <!-- Signaling Area (Modal-like) -->
+        <div id="signalArea" class="absolute inset-x-0 top-[72px] bg-white p-4 z-10 shadow-xl border-b transition-all duration-300 transform translate-y-0">
+            <div class="flex justify-between items-center mb-2">
+                <span class="text-[10px] font-bold text-gray-400 uppercase">Input Kode Sinyal</span>
+                <button onclick="clearChat()" class="text-[10px] text-red-500 font-bold underline">Bersihkan Chat</button>
+            </div>
+            <textarea id="signalInp" class="w-full h-20 text-[9px] p-3 rounded-xl border border-gray-200 outline-none font-mono bg-gray-50 focus:bg-white" placeholder="Tempel kode di sini..."></textarea>
             <div class="flex gap-2 mt-2">
-                <button onclick="createOffer()" class="flex-1 bg-slate-700 text-white text-[9px] font-bold py-2 rounded-lg uppercase tracking-tighter shadow-sm">1. Buat Undangan</button>
-                <button onclick="acceptSignal()" class="flex-1 bg-[#00a884] text-white text-[9px] font-bold py-2 rounded-lg uppercase tracking-tighter shadow-sm">2. Terima & Balas</button>
+                <button onclick="createOffer()" class="flex-1 bg-slate-800 text-white text-[10px] font-bold py-2 rounded-lg uppercase">1. Buat Undangan</button>
+                <button onclick="acceptSignal()" class="flex-1 bg-[#00a884] text-white text-[10px] font-bold py-2 rounded-lg uppercase">2. Terima & Balas</button>
             </div>
         </div>
 
         <!-- Chat Box -->
-        <div id="chatBox" class="flex-1 overflow-y-auto p-4 flex flex-col gap-2 bg-[#e5ddd5]"></div>
+        <div id="chatBox" class="flex-1 overflow-y-auto p-4 flex flex-col gap-2 bg-[#e5ddd5] hide-scroll pt-24 transition-all duration-300"></div>
 
         <!-- Input Area -->
         <div class="p-4 bg-[#f0f2f5] flex items-center gap-3 border-t">
@@ -78,31 +84,30 @@
         }
 
         function initWebRTC() {
-            pc = new RTCPeerConnection({
-                iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
-            });
+            pc = new RTCPeerConnection({ iceServers: [{ urls: "stun:stun.l.google.com:19302" }] });
 
             pc.onicecandidate = (e) => {
                 if (!e.candidate) {
-                    // Semua jalur ditemukan, enkode ke Base64 agar rapi
                     document.getElementById('signalInp').value = btoa(JSON.stringify(pc.localDescription));
-                    appendMsg("SISTEM", "Kode sinyal selesai dibuat. Silakan salin.", "inbound");
+                    appendMsg("SISTEM", "Kode sinyal dibuat. Silakan Salin & Kirim.", "inbound");
                 }
             };
 
             pc.onconnectionstatechange = () => {
                 const s = document.getElementById("status");
                 if (pc.connectionState === 'connected') {
-                    s.innerText = "TERHUBUNG (P2P)";
+                    s.innerText = "ONLINE";
                     s.className = "text-[10px] text-yellow-300 font-black animate-pulse uppercase";
                     document.getElementById("msgInp").disabled = false;
                     document.getElementById("sendBtn").disabled = false;
+                    // OTOMATIS TUTUP AREA KODE JIKA SUDAH TERHUBUNG
+                    toggleSignal(false);
                 }
             };
         }
 
         function setupDC() {
-            dc.onopen = () => console.log("DataChannel Terbuka");
+            dc.onopen = () => console.log("DC Open");
             dc.onmessage = (e) => {
                 const data = JSON.parse(e.data);
                 appendMsg(data.u, data.t, "inbound");
@@ -114,13 +119,11 @@
             setupDC();
             const offer = await pc.createOffer();
             await pc.setLocalDescription(offer);
-            appendMsg("SISTEM", "Membuat undangan... Tunggu sebentar.", "inbound");
         }
 
         async function acceptSignal() {
             const input = document.getElementById('signalInp').value.trim();
-            if (!input) return alert("Tempel kode dulu!");
-            
+            if (!input) return alert("Tempel kode!");
             try {
                 const signal = JSON.parse(atob(input));
                 if (signal.type === "offer") {
@@ -129,20 +132,16 @@
                     await pc.setRemoteDescription(new RTCSessionDescription(signal));
                     const answer = await pc.createAnswer();
                     await pc.setLocalDescription(answer);
-                } else if (signal.type === "answer") {
+                } else {
                     await pc.setRemoteDescription(new RTCSessionDescription(signal));
                 }
-                document.getElementById('signalInp').value = "";
-            } catch (e) {
-                alert("Kode tidak valid! Pastikan kamu menyalin kodenya dengan benar.");
-            }
+            } catch (e) { alert("Kode Salah!"); }
         }
 
         function sendTxt() {
             const inp = document.getElementById("msgInp");
             if (!inp.value.trim() || !dc || dc.readyState !== 'open') return;
-            const data = { u: myName, t: inp.value };
-            dc.send(JSON.stringify(data));
+            dc.send(JSON.stringify({ u: myName, t: inp.value }));
             appendMsg(myName, inp.value, "outbound");
             inp.value = "";
         }
@@ -151,14 +150,39 @@
             const box = document.getElementById("chatBox");
             const div = document.createElement("div");
             const isOut = side === "outbound";
-            
             div.className = isOut
                 ? "bg-[#dcf8c6] self-end p-3 rounded-2xl rounded-tr-none shadow-sm text-sm max-w-[85%] mb-1 border-l-4 border-[#00a884]"
                 : "bg-white self-start p-3 rounded-2xl rounded-tl-none shadow-sm text-sm max-w-[85%] mb-1 border-l-4 border-blue-500";
-            
             div.innerHTML = `<b class="text-[10px] block text-gray-400 uppercase mb-1">${u}</b><p>${t}</p>`;
             box.appendChild(div);
             box.scrollTop = box.scrollHeight;
+        }
+
+        // FUNGSI BARU: TOGGLE AREA SINYAL
+        function toggleSignal(forceState = null) {
+            const area = document.getElementById("signalArea");
+            const box = document.getElementById("chatBox");
+            if (forceState === false || !area.classList.contains('hidden')) {
+                area.classList.add('hidden');
+                box.classList.remove('pt-24');
+            } else {
+                area.classList.remove('hidden');
+                box.classList.add('pt-24');
+            }
+        }
+
+        // FUNGSI BARU: BERSIHKAN CHAT
+        function clearChat() {
+            if (confirm("Hapus semua pesan?")) {
+                document.getElementById("chatBox").innerHTML = "";
+            }
+        }
+
+        // FUNGSI BARU: RESET TOTAL
+        function confirmReset() {
+            if (confirm("Reset koneksi? Kamu harus buat undangan ulang.")) {
+                location.reload();
+            }
         }
     </script>
 </body>
