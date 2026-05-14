@@ -7,32 +7,50 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
+    <style>
+        body { background-color: #0f172a; }
+        #chatBox { background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png'); background-blend-mode: overlay; }
+        .glass { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); }
+    </style>
 </head>
-<body class="bg-slate-900 h-screen flex items-center justify-center font-sans p-2">
+<body class="h-screen flex items-center justify-center p-2 font-sans">
 
     <!-- LOGIN SCREEN -->
-    <div id="loginScreen" class="w-full max-w-md bg-white p-8 rounded-2xl shadow-2xl">
-        <h1 class="text-3xl font-bold text-[#008069] text-center mb-6">P2P Chat</h1>
-        <input type="text" id="nameInput" class="w-full p-4 bg-gray-100 rounded-xl mb-4 outline-none border-2 border-transparent focus:border-[#00a884]" placeholder="Nama Anda">
-        <input type="text" id="roomInput" class="w-full p-4 bg-gray-100 rounded-xl mb-6 outline-none border-2 border-transparent focus:border-[#00a884]" placeholder="Kunci Ruangan">
-        <button onclick="joinChat()" class="w-full bg-[#00a884] text-white p-4 rounded-xl font-bold hover:bg-[#008069] active:scale-95 transition-all">MASUK CHAT</button>
+    <div id="loginScreen" class="w-full max-w-md bg-white p-8 rounded-3xl shadow-2xl transition-all duration-500">
+        <div class="text-center mb-8">
+            <h1 class="text-3xl font-black text-[#008069] tracking-tight">P2P CHAT</h1>
+            <p class="text-gray-400 text-xs font-bold uppercase tracking-widest mt-1">Direct WebRTC Connection</p>
+        </div>
+        <div class="space-y-4">
+            <input type="text" id="nameInput" class="w-full p-4 bg-gray-100 rounded-2xl outline-none border-2 border-transparent focus:border-[#00a884] transition-all" placeholder="Nama Anda">
+            <input type="text" id="roomInput" class="w-full p-4 bg-gray-100 rounded-2xl outline-none border-2 border-transparent focus:border-[#00a884] transition-all" placeholder="Kunci Ruangan">
+            <button onclick="joinChat()" class="w-full bg-[#00a884] text-white p-4 rounded-2xl font-bold hover:bg-[#008069] shadow-lg active:scale-95 transition-all uppercase tracking-wider">Mulai Obrolan</button>
+        </div>
     </div>
 
-    <!-- CHAT SCREEN -->
-    <div id="chatScreen" class="hidden w-full max-w-md bg-[#f0f2f5] h-[95vh] flex flex-col rounded-2xl overflow-hidden shadow-2xl">
-        <div class="bg-[#008069] p-4 text-white flex justify-between items-center shadow-md">
-            <div>
-                <h1 id="currentRoom" class="font-bold text-sm">Room</h1>
-                <p id="status" class="text-[10px] opacity-80 italic">Menunggu jalur...</p>
+    <!-- CHAT INTERFACE -->
+    <div id="chatScreen" class="hidden w-full max-w-md bg-[#f0f2f5] h-[95vh] flex flex-col rounded-3xl overflow-hidden shadow-2xl relative">
+        <!-- Header -->
+        <div class="bg-[#008069] p-4 text-white flex justify-between items-center shadow-lg z-10">
+            <div class="flex items-center gap-3">
+                <div id="avatar" class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center font-bold border border-white/30 text-xl uppercase">?</div>
+                <div>
+                    <h1 id="currentRoom" class="font-bold text-sm leading-none">Room</h1>
+                    <p id="status" class="text-[10px] opacity-80 mt-1 italic tracking-wide">Mencari Jalur P2P...</p>
+                </div>
             </div>
-            <span id="connCount" class="text-[10px] bg-black/20 px-3 py-1 rounded-full">0 Online</span>
+            <div class="text-right">
+                <span id="connCount" class="text-[10px] bg-black/20 px-3 py-1 rounded-full border border-white/10 font-bold">1 Online</span>
+            </div>
         </div>
 
-        <div id="chatBox" class="flex-1 overflow-y-auto p-4 flex flex-col gap-3 bg-[#e5ddd5]" style="background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png'); background-blend-mode: overlay;"></div>
+        <!-- Chat Area -->
+        <div id="chatBox" class="flex-1 overflow-y-auto p-4 flex flex-col gap-3 bg-[#e5ddd5]"></div>
 
-        <div class="p-3 bg-[#f0f2f5] flex items-center gap-2 border-t">
-            <input type="text" id="msgInp" class="flex-1 p-3 rounded-full outline-none text-sm shadow-inner" placeholder="Ketik pesan..." disabled>
-            <button id="sendBtn" onclick="sendTxt()" class="bg-[#00a884] text-white p-3 rounded-full disabled:opacity-50" disabled>
+        <!-- Input Area -->
+        <div class="p-4 bg-[#f0f2f5] flex items-center gap-3 border-t border-gray-200">
+            <input type="text" id="msgInp" class="flex-1 p-3 rounded-2xl outline-none text-sm shadow-inner border border-transparent focus:border-gray-300" placeholder="Ketik pesan..." disabled>
+            <button id="sendBtn" onclick="sendTxt()" class="bg-[#00a884] text-white p-3 rounded-2xl shadow-md disabled:opacity-40 transition-all active:scale-90" disabled>
                 <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path></svg>
             </button>
         </div>
@@ -55,17 +73,21 @@
         function joinChat() {
             myName = document.getElementById('nameInput').value.trim();
             myRoom = document.getElementById('roomInput').value.trim();
-            if(!myName || !myRoom) return alert("Isi data!");
-            document.getElementById('loginScreen').classList.add('hidden');
+            if(!myName || !myRoom) return alert("Wajib isi Nama dan Kunci!");
+
+            document.getElementById('loginScreen').style.display = 'none';
             document.getElementById('chatScreen').classList.remove('hidden');
+            document.getElementById('avatar').innerText = myName[0];
             document.getElementById('currentRoom').innerText = "Room: " + myRoom;
-            startSignaling();
+
+            initP2P();
         }
 
-        function startSignaling() {
+        function initP2P() {
             const signalsRef = db.ref(`signals/${myRoom}/${myId}`);
             const presenceRef = db.ref(`presence/${myRoom}/${myId}`);
 
+            // 1. Listen for WebRTC Signaling
             signalsRef.on('child_added', async (snap) => {
                 const data = snap.val();
                 if (data.type === 'offer') {
@@ -79,20 +101,21 @@
                 } else if (data.type === 'ice') {
                     if (peers[data.from]) peers[data.from].pc.addIceCandidate(new RTCIceCandidate(data.ice)).catch(e => {});
                 }
-                snap.ref.remove();
+                snap.ref.remove(); // Cleanup database
             });
 
+            // 2. Set Presence
             presenceRef.set({ name: myName });
             presenceRef.onDisconnect().remove();
 
+            // 3. Peer Discovery
             db.ref(`presence/${myRoom}`).on('value', (snap) => {
                 const list = snap.val() || {};
                 document.getElementById('connCount').innerText = Object.keys(list).length + " Online";
                 Object.keys(list).forEach(peerId => {
-                    // Logic: ID yang lebih kecil secara alfabet akan jadi 'penelepon' (Offer)
-                    // Ini untuk mencegah 'race condition' atau tabrakan sinyal
+                    // Penentuan peran: ID lebih kecil jadi Caller (Offer)
                     if (peerId !== myId && !peers[peerId]) {
-                        setupPeer(peerId, myId < peerId); 
+                        setupPeer(peerId, myId < peerId);
                     }
                 });
             });
@@ -100,32 +123,47 @@
 
         function setupPeer(peerId, isCaller) {
             const pc = new RTCPeerConnection({
-                iceServers: [{ urls: "stun:stun.l.google.com:19302" }, { urls: "stun:stun1.l.google.com:19302" }]
+                iceServers: [
+                    { urls: "stun:stun.l.google.com:19302" },
+                    { urls: "stun:stun1.l.google.com:19302" },
+                    { urls: "stun:stun2.l.google.com:19302" }
+                ]
             });
             peers[peerId] = { pc: pc, dc: null };
 
-            // Kita buat Data Channel di kedua sisi dengan ID yang sama
+            // PAKSA DATA CHANNEL (Negotiated)
             const dc = pc.createDataChannel("chat", { negotiated: true, id: 0 });
-            handleDC(dc, peerId);
+            handleDataChannel(dc, peerId);
 
             pc.onicecandidate = (e) => {
-                if (e.candidate) db.ref(`signals/${myRoom}/${peerId}`).push({ from: myId, type: 'ice', ice: e.candidate });
+                if (e.candidate) {
+                    db.ref(`signals/${myRoom}/${peerId}`).push({ from: myId, type: 'ice', ice: e.candidate });
+                }
             };
 
+            pc.onconnectionstatechange = () => updateUI();
+
             if (isCaller) {
-                pc.createOffer().then(o => pc.setLocalDescription(o)).then(() => {
-                    db.ref(`signals/${myRoom}/${peerId}`).push({ from: myId, type: 'offer', sdp: pc.localDescription });
-                });
+                pc.createOffer()
+                    .then(offer => pc.setLocalDescription(offer))
+                    .then(() => {
+                        db.ref(`signals/${myRoom}/${peerId}`).push({ from: myId, type: 'offer', sdp: pc.localDescription });
+                    });
             }
 
-            pc.onconnectionstatechange = () => updateUI();
             return pc;
         }
 
-        function handleDC(dc, peerId) {
+        function handleDataChannel(dc, peerId) {
             peers[peerId].dc = dc;
-            dc.onopen = () => updateUI();
-            dc.onclose = () => { delete peers[peerId]; updateUI(); };
+            dc.onopen = () => {
+                console.log("P2P Open with:", peerId);
+                updateUI();
+            };
+            dc.onclose = () => {
+                delete peers[peerId];
+                updateUI();
+            };
             dc.onmessage = (e) => {
                 const data = JSON.parse(e.data);
                 appendMsg(data.u, data.t, 'inbound');
@@ -133,21 +171,23 @@
         }
 
         function updateUI() {
-            let active = 0;
-            for(let id in peers) if(peers[id].dc && peers[id].dc.readyState === 'open') active++;
+            let activeConnections = 0;
+            for(let id in peers) {
+                if(peers[id].dc && peers[id].dc.readyState === 'open') activeConnections++;
+            }
             
             const statusEl = document.getElementById('status');
             const inp = document.getElementById('msgInp');
             const btn = document.getElementById('sendBtn');
 
-            if (active > 0) {
-                statusEl.innerText = "Terhubung (" + active + ")";
-                statusEl.classList.add('text-yellow-300');
+            if (activeConnections > 0) {
+                statusEl.innerText = "TERHUBUNG (" + activeConnections + " Teman)";
+                statusEl.className = "text-[10px] text-yellow-300 font-black animate-pulse uppercase tracking-widest";
                 inp.disabled = false;
                 btn.disabled = false;
             } else {
-                statusEl.innerText = "Mencari teman...";
-                statusEl.classList.remove('text-yellow-300');
+                statusEl.innerText = "Mencari Jalur P2P...";
+                statusEl.className = "text-[10px] opacity-80 italic";
                 inp.disabled = true;
                 btn.disabled = true;
             }
@@ -155,24 +195,34 @@
 
         function sendTxt() {
             const inp = document.getElementById('msgInp');
-            if(!inp.value.trim()) return;
-            const payload = JSON.stringify({ u: myName, t: inp.value });
-            
+            const text = inp.value.trim();
+            if(!text) return;
+
+            const msgObj = { u: myName, t: text };
+            const jsonMsg = JSON.stringify(msgObj);
+
+            let success = false;
             Object.values(peers).forEach(p => {
-                if (p.dc && p.dc.readyState === 'open') p.dc.send(payload);
+                if (p.dc && p.dc.readyState === 'open') {
+                    p.dc.send(jsonMsg);
+                    success = true;
+                }
             });
 
-            appendMsg(myName, inp.value, 'outbound');
+            appendMsg(myName, text, 'outbound');
             inp.value = "";
         }
 
-        function appendMsg(u, t, side) {
+        function appendMsg(user, text, side) {
             const box = document.getElementById('chatBox');
             const div = document.createElement('div');
-            div.className = side === 'outbound' 
-                ? "bg-[#dcf8c6] self-end p-2 px-3 rounded-xl shadow-sm text-sm max-w-[80%] border-l-4 border-[#00a884] mb-2" 
-                : "bg-white self-start p-2 px-3 rounded-xl shadow-sm text-sm max-w-[80%] border-l-4 border-blue-500 mb-2";
-            div.innerHTML = `<b class="text-[10px] block text-gray-500 uppercase">${u}</b>${t}`;
+            const isOut = side === 'outbound';
+            
+            div.className = isOut 
+                ? "bg-[#dcf8c6] self-end p-3 rounded-2xl rounded-tr-none shadow-sm text-sm max-w-[85%] mb-1 border-l-4 border-[#00a884] slide-in-right" 
+                : "bg-white self-start p-3 rounded-2xl rounded-tl-none shadow-sm text-sm max-w-[85%] mb-1 border-l-4 border-blue-500 slide-in-left";
+            
+            div.innerHTML = `<b class="text-[10px] block text-gray-500 uppercase mb-1">${user}</b><p class="leading-relaxed">${text}</p>`;
             box.appendChild(div);
             box.scrollTop = box.scrollHeight;
         }
