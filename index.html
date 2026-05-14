@@ -1,132 +1,164 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Manual P2P - Mahmuda</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>P2P Manual Ultra - Mahmuda</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
+        body { background-color: #0f172a; }
+        #chatBox {
+            background-image: url("https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png");
+            background-blend-mode: overlay;
+        }
         #box::-webkit-scrollbar { width: 4px; }
-        #box::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+        #box::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 10px; }
     </style>
 </head>
-<body class="bg-slate-50 h-screen flex items-center justify-center p-4 font-sans">
+<body class="h-screen flex items-center justify-center p-2 font-sans overflow-hidden">
 
-    <div class="w-full max-w-md bg-white rounded-[2rem] shadow-2xl flex flex-col h-[90vh] overflow-hidden border border-slate-100">
+    <!-- LOGIN SCREEN -->
+    <div id="loginScreen" class="w-full max-w-md bg-white p-8 rounded-3xl shadow-2xl">
+        <div class="text-center mb-8">
+            <h1 class="text-3xl font-black text-[#008069]">P2P MANUAL</h1>
+            <p class="text-gray-400 text-[10px] font-bold uppercase tracking-widest mt-1">Manual Signaling Mode</p>
+        </div>
+        <div class="space-y-4">
+            <input type="text" id="nameInput" class="w-full p-4 bg-gray-100 rounded-2xl outline-none border-2 border-transparent focus:border-[#00a884]" placeholder="Nama Anda" />
+            <button onclick="joinChat()" class="w-full bg-[#00a884] text-white p-4 rounded-2xl font-bold hover:bg-[#008069] shadow-lg active:scale-95 uppercase transition-all">Masuk Obrolan</button>
+        </div>
+    </div>
+
+    <!-- CHAT INTERFACE -->
+    <div id="chatScreen" class="hidden w-full max-w-md bg-[#f0f2f5] h-[95vh] flex flex-col rounded-3xl overflow-hidden shadow-2xl relative">
         <!-- Header -->
-        <div class="p-6 border-b flex justify-between items-center bg-white">
-            <div>
-                <h1 class="text-xl font-black text-slate-800 tracking-tight">Direct Chat</h1>
-                <div class="flex items-center gap-2 mt-1">
-                    <span id="statusDot" class="w-2 h-2 bg-red-500 rounded-full"></span>
-                    <span id="status" class="text-[10px] uppercase font-bold text-slate-400 tracking-widest">Offline</span>
+        <div class="bg-[#008069] p-4 text-white flex justify-between items-center z-10 shadow-md">
+            <div class="flex items-center gap-3">
+                <div id="avatar" class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center font-bold border border-white/30 text-xl uppercase italic">M</div>
+                <div>
+                    <h1 id="userNameDisplay" class="font-bold text-sm leading-none italic">User</h1>
+                    <p id="status" class="text-[10px] opacity-80 mt-1 italic font-medium">Offline (Gunakan Kode Sinyal)</p>
                 </div>
             </div>
-            <button onclick="location.reload()" class="p-2 hover:bg-slate-100 rounded-full transition">
-                <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
-            </button>
+            <span id="connCount" class="text-[10px] bg-black/20 px-3 py-1 rounded-full border border-white/10 font-bold">P2P Direct</span>
         </div>
 
-        <!-- Box Chat -->
-        <div id="box" class="flex-1 p-6 overflow-y-auto space-y-4 bg-slate-50/50">
-            <div class="bg-blue-50 border border-blue-100 p-4 rounded-2xl text-[11px] text-blue-700 leading-relaxed">
-                <p class="font-bold mb-1 uppercase tracking-tighter">Instruksi Manual:</p>
-                1. Klik <b class="text-blue-900">Buat Undangan</b> (HP/Laptop).<br>
-                2. Copy kodenya, kirim ke perangkat lain.<br>
-                3. Paste di perangkat lain, klik <b class="text-blue-900">Terima/Balas</b>.<br>
-                4. Kirim balik kode balasan ke perangkat pertama & Paste.
+        <!-- Manual Signaling Box (Area Baru) -->
+        <div class="p-3 bg-[#e5ddd5] border-b border-gray-300">
+            <textarea id="signalInp" class="w-full h-16 text-[9px] p-2 rounded-xl border-none shadow-inner bg-white/80 focus:bg-white outline-none font-mono" placeholder="Tempel kode di sini..."></textarea>
+            <div class="flex gap-2 mt-2">
+                <button onclick="createOffer()" class="flex-1 bg-slate-700 text-white text-[9px] font-bold py-2 rounded-lg uppercase tracking-tighter shadow-sm">1. Buat Undangan</button>
+                <button onclick="acceptSignal()" class="flex-1 bg-[#00a884] text-white text-[9px] font-bold py-2 rounded-lg uppercase tracking-tighter shadow-sm">2. Terima & Balas</button>
             </div>
         </div>
 
-        <!-- Signaling Area (Manual) -->
-        <div class="p-6 border-t bg-white space-y-3">
-            <textarea id="signalInput" class="w-full text-[10px] p-3 h-20 bg-slate-50 border-none rounded-xl outline-none focus:ring-2 focus:ring-blue-500/20 transition-all font-mono" placeholder="Tempel kode di sini..."></textarea>
-            <div class="grid grid-cols-2 gap-2">
-                <button onclick="createOffer()" class="bg-slate-800 text-white text-[10px] font-bold p-3 rounded-xl hover:bg-black transition-all uppercase tracking-wider">1. Buat Undangan</button>
-                <button onclick="acceptSignal()" class="bg-blue-600 text-white text-[10px] font-bold p-3 rounded-xl hover:bg-blue-700 transition-all uppercase tracking-wider shadow-lg shadow-blue-100">2. Terima / Balas</button>
-            </div>
-        </div>
+        <!-- Chat Box -->
+        <div id="chatBox" class="flex-1 overflow-y-auto p-4 flex flex-col gap-2 bg-[#e5ddd5]"></div>
 
-        <!-- Chat Input -->
-        <div class="p-6 bg-white border-t flex gap-2">
-            <input type="text" id="msg" class="flex-1 bg-slate-100 p-4 rounded-2xl outline-none text-sm focus:bg-white focus:ring-2 focus:ring-blue-500/20 transition-all" placeholder="Tulis pesan...">
-            <button onclick="send()" class="bg-blue-600 text-white p-4 rounded-2xl hover:scale-95 transition-all">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
+        <!-- Input Area -->
+        <div class="p-4 bg-[#f0f2f5] flex items-center gap-3 border-t">
+            <input type="text" id="msgInp" class="flex-1 p-3 rounded-2xl outline-none text-sm shadow-inner disabled:bg-gray-200" placeholder="Ketik pesan..." disabled />
+            <button id="sendBtn" onclick="sendTxt()" class="bg-[#00a884] text-white p-3 rounded-2xl shadow-md disabled:opacity-30 active:scale-90 transition-all" disabled>
+                <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path></svg>
             </button>
         </div>
     </div>
 
     <script>
-        let pc = new RTCPeerConnection({ iceServers: [{urls:"stun:stun.l.google.com:19302"}] });
-        let dc;
+        let myName, pc, dc;
+
+        function joinChat() {
+            myName = document.getElementById("nameInput").value.trim();
+            if (!myName) return alert("Isi Nama!");
+            document.getElementById("loginScreen").classList.add("hidden");
+            document.getElementById("chatScreen").classList.remove("hidden");
+            document.getElementById("avatar").innerText = myName[0];
+            document.getElementById("userNameDisplay").innerText = myName;
+            initWebRTC();
+        }
+
+        function initWebRTC() {
+            pc = new RTCPeerConnection({
+                iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
+            });
+
+            pc.onicecandidate = (e) => {
+                if (!e.candidate) {
+                    // Semua jalur ditemukan, enkode ke Base64 agar rapi
+                    document.getElementById('signalInp').value = btoa(JSON.stringify(pc.localDescription));
+                    appendMsg("SISTEM", "Kode sinyal selesai dibuat. Silakan salin.", "inbound");
+                }
+            };
+
+            pc.onconnectionstatechange = () => {
+                const s = document.getElementById("status");
+                if (pc.connectionState === 'connected') {
+                    s.innerText = "TERHUBUNG (P2P)";
+                    s.className = "text-[10px] text-yellow-300 font-black animate-pulse uppercase";
+                    document.getElementById("msgInp").disabled = false;
+                    document.getElementById("sendBtn").disabled = false;
+                }
+            };
+        }
 
         function setupDC() {
-            dc.onopen = () => {
-                document.getElementById('status').innerText = "Terhubung";
-                document.getElementById('status').classList.replace('text-slate-400', 'text-green-600');
-                document.getElementById('statusDot').classList.replace('bg-red-500', 'bg-green-500');
-                addMsg("Sistem", "Koneksi Aman & Langsung Berhasil!", "in");
-            };
-            dc.onmessage = e => {
-                let data = JSON.parse(e.data);
-                addMsg("Teman", data.t, 'in');
+            dc.onopen = () => console.log("DataChannel Terbuka");
+            dc.onmessage = (e) => {
+                const data = JSON.parse(e.data);
+                appendMsg(data.u, data.t, "inbound");
             };
         }
 
         async function createOffer() {
-            dc = pc.createDataChannel("chat");
+            dc = pc.createDataChannel("chat", { negotiated: true, id: 0 });
             setupDC();
             const offer = await pc.createOffer();
             await pc.setLocalDescription(offer);
-            pc.onicecandidate = (e) => {
-                if (!e.candidate) {
-                    document.getElementById('signalInput').value = btoa(JSON.stringify(pc.localDescription));
-                    addMsg("Sistem", "Kode undangan (Base64) siap. Salin & kirim!", "in");
-                }
-            };
+            appendMsg("SISTEM", "Membuat undangan... Tunggu sebentar.", "inbound");
         }
 
         async function acceptSignal() {
-            const input = document.getElementById('signalInput').value;
+            const input = document.getElementById('signalInp').value.trim();
             if (!input) return alert("Tempel kode dulu!");
+            
             try {
                 const signal = JSON.parse(atob(input));
                 if (signal.type === "offer") {
-                    pc.ondatachannel = (e) => { dc = e.channel; setupDC(); };
+                    dc = pc.createDataChannel("chat", { negotiated: true, id: 0 });
+                    setupDC();
                     await pc.setRemoteDescription(new RTCSessionDescription(signal));
                     const answer = await pc.createAnswer();
                     await pc.setLocalDescription(answer);
-                    pc.onicecandidate = (e) => {
-                        if (!e.candidate) {
-                            document.getElementById('signalInput').value = btoa(JSON.stringify(pc.localDescription));
-                            addMsg("Sistem", "Kode balasan siap. Kirim balik!", "in");
-                        }
-                    };
-                } else {
+                } else if (signal.type === "answer") {
                     await pc.setRemoteDescription(new RTCSessionDescription(signal));
                 }
-            } catch(e) { alert("Kode tidak valid!"); }
+                document.getElementById('signalInp').value = "";
+            } catch (e) {
+                alert("Kode tidak valid! Pastikan kamu menyalin kodenya dengan benar.");
+            }
         }
 
-        function send() {
-            let inp = document.getElementById('msg');
-            if(!dc || dc.readyState !== 'open') return;
-            dc.send(JSON.stringify({t: inp.value}));
-            addMsg("Saya", inp.value, 'out');
+        function sendTxt() {
+            const inp = document.getElementById("msgInp");
+            if (!inp.value.trim() || !dc || dc.readyState !== 'open') return;
+            const data = { u: myName, t: inp.value };
+            dc.send(JSON.stringify(data));
+            appendMsg(myName, inp.value, "outbound");
             inp.value = "";
         }
 
-        function addMsg(u, t, s) {
-            let b = document.getElementById('box');
-            let isOut = s === 'out';
-            b.innerHTML += `
-                <div class="flex flex-col ${isOut ? 'items-end' : 'items-start'}">
-                    <div class="max-w-[80%] ${isOut ? 'bg-blue-600 text-white rounded-2xl rounded-tr-none' : 'bg-white border border-slate-200 text-slate-800 rounded-2xl rounded-tl-none'} p-3 shadow-sm text-sm">
-                        <p class="text-[9px] font-bold mb-1 opacity-70">${u}</p>
-                        <p>${t}</p>
-                    </div>
-                </div>`;
-            b.scrollTop = b.scrollHeight;
+        function appendMsg(u, t, side) {
+            const box = document.getElementById("chatBox");
+            const div = document.createElement("div");
+            const isOut = side === "outbound";
+            
+            div.className = isOut
+                ? "bg-[#dcf8c6] self-end p-3 rounded-2xl rounded-tr-none shadow-sm text-sm max-w-[85%] mb-1 border-l-4 border-[#00a884]"
+                : "bg-white self-start p-3 rounded-2xl rounded-tl-none shadow-sm text-sm max-w-[85%] mb-1 border-l-4 border-blue-500";
+            
+            div.innerHTML = `<b class="text-[10px] block text-gray-400 uppercase mb-1">${u}</b><p>${t}</p>`;
+            box.appendChild(div);
+            box.scrollTop = box.scrollHeight;
         }
     </script>
 </body>
