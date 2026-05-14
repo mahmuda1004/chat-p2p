@@ -19,7 +19,6 @@ A lightweight, browser-based Peer-to-Peer (P2P) chat application built with **We
 <p align="center">
   <img src="chat-interface.png" alt="Tampilan Chat P2P" width="400">
 </p>
-![Preview Chat](chat-interface.png)
 
 ## 🛠️ Tech Stack
 
