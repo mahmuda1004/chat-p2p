@@ -2,103 +2,109 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Chat P2P - Mahmuda</title>
+    <title>P2P Manual - Mahmuda</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
 </head>
 <body class="bg-gray-100 p-5 flex flex-col items-center font-sans">
 
-    <div id="setup" class="bg-white p-6 rounded-lg shadow-md w-full max-w-sm">
-        <h2 class="text-xl font-bold mb-4 text-center">Masuk Chat</h2>
-        <input type="text" id="name" placeholder="Nama" class="w-full border p-2 mb-2 rounded">
-        <input type="text" id="room" placeholder="Kode Ruang" class="w-full border p-2 mb-4 rounded">
-        <button onclick="start()" class="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600">Gabung</button>
-    </div>
-
-    <div id="main" class="hidden w-full max-w-md bg-white rounded-lg shadow-lg flex flex-col h-[80vh]">
+    <div class="w-full max-w-md bg-white rounded-lg shadow-lg flex flex-col h-[90vh]">
         <div class="bg-blue-600 p-4 text-white rounded-t-lg flex justify-between">
-            <span id="roomTitle">Ruang</span>
-            <span id="status" class="text-xs uppercase font-bold">Offline</span>
+            <span class="font-bold">Chat P2P Manual</span>
+            <span id="status" class="text-xs uppercase font-bold text-red-200">Offline</span>
         </div>
-        <div id="box" class="flex-1 p-4 overflow-y-auto bg-gray-50 space-y-2 text-sm"></div>
+
+        <div id="box" class="flex-1 p-4 overflow-y-auto bg-gray-50 space-y-2 text-sm">
+            <div class="bg-yellow-100 p-2 rounded text-xs">
+                <b>Cara Pakai:</b><br>
+                1. Klik "Buat Undangan" di HP.<br>
+                2. Copy kode yang muncul, kirim ke Laptop.<br>
+                3. Laptop Paste kode di kotak bawah, klik "Terima Undangan".<br>
+                4. Laptop Copy "Kode Balasan", kirim balik ke HP.<br>
+                5. HP Paste di kotak bawah, klik "Selesaikan".
+            </div>
+        </div>
+
+        <!-- Area Input Kode Sinyal -->
+        <div class="p-3 border-t bg-gray-100 space-y-2">
+            <textarea id="signalInput" class="w-full text-[10px] p-1 h-16 border rounded" placeholder="Paste kode di sini..."></textarea>
+            <div class="flex gap-1">
+                <button onclick="createOffer()" class="bg-blue-500 text-white text-[10px] px-2 py-1 rounded">1. Buat Undangan</button>
+                <button onclick="acceptSignal()" class="bg-green-500 text-white text-[10px] px-2 py-1 rounded">2. Terima/Selesaikan</button>
+            </div>
+        </div>
+
         <div class="p-3 border-t flex gap-2">
             <input type="text" id="msg" class="flex-1 border p-2 rounded" placeholder="Ketik...">
-            <button onclick="send()" class="bg-green-500 text-white px-4 py-2 rounded">Kirim</button>
+            <button onclick="send()" class="bg-blue-600 text-white px-4 py-2 rounded">Kirim</button>
         </div>
     </div>
 
     <script>
-        const config = {
-            apiKey: "AIzaSyCkXFfGeA2KuDqNoNU5A7Q-FPLI-YpURHk",
-            authDomain: "realtime-database-f4102.firebaseapp.com",
-            databaseURL: "https://realtime-database-f4102-default-rtdb.asia-southeast1.firebasedatabase.app",
-            projectId: "realtime-database-f4102"
-        };
-        firebase.initializeApp(config);
-        const db = firebase.database();
-        let myId = Math.random().toString(36).substr(7), myName, myRoom, peers = {};
+        let pc = new RTCPeerConnection({ iceServers: [{urls:"stun:stun.l.google.com:19302"}] });
+        let dc;
 
-        function start() {
-            myName = document.getElementById('name').value;
-            myRoom = document.getElementById('room').value;
-            if(!myName || !myRoom) return;
-            document.getElementById('setup').classList.add('hidden');
-            document.getElementById('main').classList.remove('hidden');
-            document.getElementById('roomTitle').innerText = "Ruang: " + myRoom;
-
-            // Signaling
-            db.ref(`signals/${myRoom}/${myId}`).on('child_added', async snap => {
-                let d = snap.val();
-                if(d.type === 'offer') {
-                    let pc = getPC(d.from, false);
-                    await pc.setRemoteDescription(new RTCSessionDescription(d.sdp));
-                    let ans = await pc.createAnswer();
-                    await pc.setLocalDescription(ans);
-                    db.ref(`signals/${myRoom}/${d.from}`).push({from:myId, type:'answer', sdp:ans});
-                } else if(d.type === 'answer') {
-                    if(peers[d.from]) await peers[d.from].pc.setRemoteDescription(new RTCSessionDescription(d.sdp));
-                } else if(d.type === 'ice') {
-                    if(peers[d.from]) peers[d.from].pc.addIceCandidate(new RTCIceCandidate(d.ice));
-                }
-                snap.ref.remove();
-            });
-
-            db.ref(`presence/${myRoom}`).on('value', snap => {
-                let list = snap.val() || {};
-                Object.keys(list).forEach(id => {
-                    if(id !== myId && !peers[id]) getPC(id, myId < id);
-                });
-            });
-            db.ref(`presence/${myRoom}/${myId}`).set(true).then(() => {
-                db.ref(`presence/${myRoom}/${myId}`).onDisconnect().remove();
-            });
+        // Inisialisasi Data Channel
+        function setupDC() {
+            dc.onopen = () => {
+                document.getElementById('status').innerText = "Online";
+                document.getElementById('status').classList.replace('text-red-200', 'text-green-400');
+                addMsg("Sistem", "Terhubung secara Peer-to-Peer!", "in");
+            };
+            dc.onmessage = e => {
+                let data = JSON.parse(e.data);
+                addMsg(data.u, data.t, 'in');
+            };
         }
 
-        function getPC(id, caller) {
-            let pc = new RTCPeerConnection({ iceServers: [{urls:"stun:stun.l.google.com:19302"}] });
-            let dc = pc.createDataChannel("chat", {negotiated:true, id:0});
-            peers[id] = {pc, dc};
-
-            dc.onopen = () => document.getElementById('status').innerText = "Online";
-            dc.onmessage = e => addMsg(JSON.parse(e.data).u, JSON.parse(e.data).t, 'in');
-            pc.onicecandidate = e => {
-                if(e.candidate) db.ref(`signals/${myRoom}/${id}`).push({from:myId, type:'ice', ice:e.candidate});
+        // 1. Membuat Offer (Undangan)
+        async function createOffer() {
+            dc = pc.createDataChannel("chat");
+            setupDC();
+            const offer = await pc.createOffer();
+            await pc.setLocalDescription(offer);
+            
+            // Tunggu ICE Gathering selesai (cara manual paling stabil)
+            pc.onicecandidate = (e) => {
+                if (!e.candidate) {
+                    document.getElementById('signalInput').value = JSON.stringify(pc.localDescription);
+                    addMsg("Sistem", "Kode Undangan dibuat. Salin dan kirim ke teman.", "in");
+                }
             };
+        }
 
-            if(caller) {
-                pc.createOffer().then(o => pc.setLocalDescription(o)).then(() => {
-                    db.ref(`signals/${myRoom}/${id}`).push({from:myId, type:'offer', sdp:pc.localDescription});
-                });
+        // 2. Menerima Sinyal (Offer atau Answer)
+        async function acceptSignal() {
+            const input = document.getElementById('signalInput').value;
+            if (!input) return alert("Paste kode dulu!");
+            const signal = JSON.parse(input);
+
+            if (signal.type === "offer") {
+                pc.ondatachannel = (e) => {
+                    dc = e.channel;
+                    setupDC();
+                };
+                await pc.setRemoteDescription(new RTCSessionDescription(signal));
+                const answer = await pc.createAnswer();
+                await pc.setLocalDescription(answer);
+                
+                pc.onicecandidate = (e) => {
+                    if (!e.candidate) {
+                        document.getElementById('signalInput').value = JSON.stringify(pc.localDescription);
+                        addMsg("Sistem", "Kode Balasan dibuat. Salin dan kirim balik ke pengundang.", "in");
+                    }
+                };
+            } else if (signal.type === "answer") {
+                await pc.setRemoteDescription(new RTCSessionDescription(signal));
+                addMsg("Sistem", "Proses selesai. Menunggu koneksi...", "in");
             }
-            return pc;
         }
 
         function send() {
             let inp = document.getElementById('msg');
-            let data = {u:myName, t:inp.value};
-            Object.values(peers).forEach(p => p.dc.readyState === 'open' && p.dc.send(JSON.stringify(data)));
-            addMsg(myName, inp.value, 'out');
+            if(!dc || dc.readyState !== 'open') return alert("Belum terhubung!");
+            let data = {u: "User", t: inp.value};
+            dc.send(JSON.stringify(data));
+            addMsg("Saya", inp.value, 'out');
             inp.value = "";
         }
 
