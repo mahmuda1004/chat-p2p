@@ -12,8 +12,8 @@ A lightweight, browser-based Peer-to-Peer (P2P) chat application built with **We
 *   **No Database Required**: All data is handled in-memory and through direct signaling.
 
 ## 📸 Interface
-![Preview Aplikasi](img/login-screen.png)
-![Preview Chat](img/chat-interface.png)
+![Preview Aplikasi](login-screen.png)
+![Preview Chat](chat-interface.png)
 
 ## 🛠️ Tech Stack
 
