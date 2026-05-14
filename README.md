@@ -12,9 +12,12 @@ A lightweight, browser-based Peer-to-Peer (P2P) chat application built with **We
 *   **No Database Required**: All data is handled in-memory and through direct signaling.
 
 ## 📸 Interface
-![Preview Aplikasi](login-screen.png)
 <p align="center">
-  <img src="login-screen.png" alt="Tampilan Chat P2P" width="400">
+  <img src="login-screen.png" alt="Tampilan Login P2P" width="400">
+</p>
+
+<p align="center">
+  <img src="chat-interface.png" alt="Tampilan Chat P2P" width="400">
 </p>
 ![Preview Chat](chat-interface.png)
 
