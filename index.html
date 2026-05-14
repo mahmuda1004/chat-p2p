@@ -10,47 +10,43 @@
     <style>
         body { background-color: #0f172a; }
         #chatBox { background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png'); background-blend-mode: overlay; }
-        .glass { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); }
     </style>
 </head>
 <body class="h-screen flex items-center justify-center p-2 font-sans">
 
     <!-- LOGIN SCREEN -->
-    <div id="loginScreen" class="w-full max-w-md bg-white p-8 rounded-3xl shadow-2xl transition-all duration-500">
+    <div id="loginScreen" class="w-full max-w-md bg-white p-8 rounded-3xl shadow-2xl transition-all">
         <div class="text-center mb-8">
             <h1 class="text-3xl font-black text-[#008069] tracking-tight">P2P CHAT</h1>
-            <p class="text-gray-400 text-xs font-bold uppercase tracking-widest mt-1">Direct WebRTC Connection</p>
+            <p class="text-gray-400 text-[10px] font-bold uppercase tracking-widest mt-1">WebRTC + TURN Relay Enabled</p>
         </div>
         <div class="space-y-4">
-            <input type="text" id="nameInput" class="w-full p-4 bg-gray-100 rounded-2xl outline-none border-2 border-transparent focus:border-[#00a884] transition-all" placeholder="Nama Anda">
-            <input type="text" id="roomInput" class="w-full p-4 bg-gray-100 rounded-2xl outline-none border-2 border-transparent focus:border-[#00a884] transition-all" placeholder="Kunci Ruangan">
-            <button onclick="joinChat()" class="w-full bg-[#00a884] text-white p-4 rounded-2xl font-bold hover:bg-[#008069] shadow-lg active:scale-95 transition-all uppercase tracking-wider">Mulai Obrolan</button>
+            <input type="text" id="nameInput" class="w-full p-4 bg-gray-100 rounded-2xl outline-none border-2 border-transparent focus:border-[#00a884]" placeholder="Nama Anda">
+            <input type="text" id="roomInput" class="w-full p-4 bg-gray-100 rounded-2xl outline-none border-2 border-transparent focus:border-[#00a884]" placeholder="Kunci Ruangan">
+            <button onclick="joinChat()" class="w-full bg-[#00a884] text-white p-4 rounded-2xl font-bold hover:bg-[#008069] shadow-lg active:scale-95 uppercase">Masuk Obrolan</button>
         </div>
     </div>
 
     <!-- CHAT INTERFACE -->
     <div id="chatScreen" class="hidden w-full max-w-md bg-[#f0f2f5] h-[95vh] flex flex-col rounded-3xl overflow-hidden shadow-2xl relative">
-        <!-- Header -->
         <div class="bg-[#008069] p-4 text-white flex justify-between items-center shadow-lg z-10">
             <div class="flex items-center gap-3">
                 <div id="avatar" class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center font-bold border border-white/30 text-xl uppercase">?</div>
                 <div>
                     <h1 id="currentRoom" class="font-bold text-sm leading-none">Room</h1>
-                    <p id="status" class="text-[10px] opacity-80 mt-1 italic tracking-wide">Mencari Jalur P2P...</p>
+                    <p id="status" class="text-[10px] opacity-80 mt-1 italic">Menghubungkan...</p>
                 </div>
             </div>
             <div class="text-right">
-                <span id="connCount" class="text-[10px] bg-black/20 px-3 py-1 rounded-full border border-white/10 font-bold">1 Online</span>
+                <span id="connCount" class="text-[10px] bg-black/20 px-3 py-1 rounded-full border border-white/10 font-bold italic">0 Online</span>
             </div>
         </div>
 
-        <!-- Chat Area -->
         <div id="chatBox" class="flex-1 overflow-y-auto p-4 flex flex-col gap-3 bg-[#e5ddd5]"></div>
 
-        <!-- Input Area -->
-        <div class="p-4 bg-[#f0f2f5] flex items-center gap-3 border-t border-gray-200">
-            <input type="text" id="msgInp" class="flex-1 p-3 rounded-2xl outline-none text-sm shadow-inner border border-transparent focus:border-gray-300" placeholder="Ketik pesan..." disabled>
-            <button id="sendBtn" onclick="sendTxt()" class="bg-[#00a884] text-white p-3 rounded-2xl shadow-md disabled:opacity-40 transition-all active:scale-90" disabled>
+        <div class="p-4 bg-[#f0f2f5] flex items-center gap-3 border-t">
+            <input type="text" id="msgInp" class="flex-1 p-3 rounded-2xl outline-none text-sm shadow-inner disabled:bg-gray-200" placeholder="Ketik pesan..." disabled>
+            <button id="sendBtn" onclick="sendTxt()" class="bg-[#00a884] text-white p-3 rounded-2xl shadow-md disabled:opacity-30" disabled>
                 <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path></svg>
             </button>
         </div>
@@ -73,21 +69,20 @@
         function joinChat() {
             myName = document.getElementById('nameInput').value.trim();
             myRoom = document.getElementById('roomInput').value.trim();
-            if(!myName || !myRoom) return alert("Wajib isi Nama dan Kunci!");
+            if(!myName || !myRoom) return alert("Isi Nama & Kunci!");
 
             document.getElementById('loginScreen').style.display = 'none';
             document.getElementById('chatScreen').classList.remove('hidden');
             document.getElementById('avatar').innerText = myName[0];
             document.getElementById('currentRoom').innerText = "Room: " + myRoom;
 
-            initP2P();
+            initSignaling();
         }
 
-        function initP2P() {
+        function initSignaling() {
             const signalsRef = db.ref(`signals/${myRoom}/${myId}`);
             const presenceRef = db.ref(`presence/${myRoom}/${myId}`);
 
-            // 1. Listen for WebRTC Signaling
             signalsRef.on('child_added', async (snap) => {
                 const data = snap.val();
                 if (data.type === 'offer') {
@@ -99,24 +94,19 @@
                 } else if (data.type === 'answer') {
                     if (peers[data.from]) await peers[data.from].pc.setRemoteDescription(new RTCSessionDescription(data.sdp));
                 } else if (data.type === 'ice') {
-                    if (peers[data.from]) peers[data.from].pc.addIceCandidate(new RTCIceCandidate(data.ice)).catch(e => {});
+                    if (peers[data.from]) peers[data.from].pc.addIceCandidate(new RTCIceCandidate(data.ice)).catch(e=>{});
                 }
-                snap.ref.remove(); // Cleanup database
+                snap.ref.remove();
             });
 
-            // 2. Set Presence
             presenceRef.set({ name: myName });
             presenceRef.onDisconnect().remove();
 
-            // 3. Peer Discovery
             db.ref(`presence/${myRoom}`).on('value', (snap) => {
                 const list = snap.val() || {};
                 document.getElementById('connCount').innerText = Object.keys(list).length + " Online";
                 Object.keys(list).forEach(peerId => {
-                    // Penentuan peran: ID lebih kecil jadi Caller (Offer)
-                    if (peerId !== myId && !peers[peerId]) {
-                        setupPeer(peerId, myId < peerId);
-                    }
+                    if (peerId !== myId && !peers[peerId]) setupPeer(peerId, myId < peerId);
                 });
             });
         }
@@ -126,67 +116,55 @@
                 iceServers: [
                     { urls: "stun:stun.l.google.com:19302" },
                     { urls: "stun:stun1.l.google.com:19302" },
-                    { urls: "stun:stun2.l.google.com:19302" }
-                ]
+                    { urls: "turn:openrelay.metered.ca:80", username: "openrelayproject", credential: "openrelayproject" },
+                    { urls: "turn:openrelay.metered.ca:443", username: "openrelayproject", credential: "openrelayproject" }
+                ],
+                iceCandidatePoolSize: 10
             });
+
             peers[peerId] = { pc: pc, dc: null };
 
-            // PAKSA DATA CHANNEL (Negotiated)
+            // Negotiated Data Channel (Paksa sambung di ID 0)
             const dc = pc.createDataChannel("chat", { negotiated: true, id: 0 });
-            handleDataChannel(dc, peerId);
+            
+            dc.onopen = () => updateUI();
+            dc.onclose = () => { delete peers[peerId]; updateUI(); };
+            dc.onmessage = (e) => {
+                const data = JSON.parse(e.data);
+                appendMsg(data.u, data.t, 'inbound');
+            };
+            peers[peerId].dc = dc;
 
             pc.onicecandidate = (e) => {
-                if (e.candidate) {
-                    db.ref(`signals/${myRoom}/${peerId}`).push({ from: myId, type: 'ice', ice: e.candidate });
-                }
+                if (e.candidate) db.ref(`signals/${myRoom}/${peerId}`).push({ from: myId, type: 'ice', ice: e.candidate });
             };
 
             pc.onconnectionstatechange = () => updateUI();
 
             if (isCaller) {
-                pc.createOffer()
-                    .then(offer => pc.setLocalDescription(offer))
-                    .then(() => {
-                        db.ref(`signals/${myRoom}/${peerId}`).push({ from: myId, type: 'offer', sdp: pc.localDescription });
-                    });
+                pc.createOffer().then(o => pc.setLocalDescription(o)).then(() => {
+                    db.ref(`signals/${myRoom}/${peerId}`).push({ from: myId, type: 'offer', sdp: pc.localDescription });
+                });
             }
 
             return pc;
         }
 
-        function handleDataChannel(dc, peerId) {
-            peers[peerId].dc = dc;
-            dc.onopen = () => {
-                console.log("P2P Open with:", peerId);
-                updateUI();
-            };
-            dc.onclose = () => {
-                delete peers[peerId];
-                updateUI();
-            };
-            dc.onmessage = (e) => {
-                const data = JSON.parse(e.data);
-                appendMsg(data.u, data.t, 'inbound');
-            };
-        }
-
         function updateUI() {
-            let activeConnections = 0;
-            for(let id in peers) {
-                if(peers[id].dc && peers[id].dc.readyState === 'open') activeConnections++;
-            }
+            let active = 0;
+            for(let id in peers) if(peers[id].dc && peers[id].dc.readyState === 'open') active++;
             
             const statusEl = document.getElementById('status');
             const inp = document.getElementById('msgInp');
             const btn = document.getElementById('sendBtn');
 
-            if (activeConnections > 0) {
-                statusEl.innerText = "TERHUBUNG (" + activeConnections + " Teman)";
-                statusEl.className = "text-[10px] text-yellow-300 font-black animate-pulse uppercase tracking-widest";
+            if (active > 0) {
+                statusEl.innerText = "TERHUBUNG (" + active + " Teman)";
+                statusEl.className = "text-[10px] text-yellow-300 font-black animate-pulse uppercase";
                 inp.disabled = false;
                 btn.disabled = false;
             } else {
-                statusEl.innerText = "Mencari Jalur P2P...";
+                statusEl.innerText = "Mencari Jalur...";
                 statusEl.className = "text-[10px] opacity-80 italic";
                 inp.disabled = true;
                 btn.disabled = true;
@@ -195,34 +173,27 @@
 
         function sendTxt() {
             const inp = document.getElementById('msgInp');
-            const text = inp.value.trim();
-            if(!text) return;
-
-            const msgObj = { u: myName, t: text };
-            const jsonMsg = JSON.stringify(msgObj);
-
-            let success = false;
+            if(!inp.value.trim()) return;
+            const msg = JSON.stringify({ u: myName, t: inp.value });
+            
             Object.values(peers).forEach(p => {
-                if (p.dc && p.dc.readyState === 'open') {
-                    p.dc.send(jsonMsg);
-                    success = true;
-                }
+                if (p.dc && p.dc.readyState === 'open') p.dc.send(msg);
             });
 
-            appendMsg(myName, text, 'outbound');
+            appendMsg(myName, inp.value, 'outbound');
             inp.value = "";
         }
 
-        function appendMsg(user, text, side) {
+        function appendMsg(u, t, side) {
             const box = document.getElementById('chatBox');
             const div = document.createElement('div');
             const isOut = side === 'outbound';
             
             div.className = isOut 
-                ? "bg-[#dcf8c6] self-end p-3 rounded-2xl rounded-tr-none shadow-sm text-sm max-w-[85%] mb-1 border-l-4 border-[#00a884] slide-in-right" 
-                : "bg-white self-start p-3 rounded-2xl rounded-tl-none shadow-sm text-sm max-w-[85%] mb-1 border-l-4 border-blue-500 slide-in-left";
+                ? "bg-[#dcf8c6] self-end p-3 rounded-2xl rounded-tr-none shadow-sm text-sm max-w-[85%] mb-1 border-l-4 border-[#00a884]" 
+                : "bg-white self-start p-3 rounded-2xl rounded-tl-none shadow-sm text-sm max-w-[85%] mb-1 border-l-4 border-blue-500";
             
-            div.innerHTML = `<b class="text-[10px] block text-gray-500 uppercase mb-1">${user}</b><p class="leading-relaxed">${text}</p>`;
+            div.innerHTML = `<b class="text-[10px] block text-gray-400 uppercase mb-1">${u}</b><p>${t}</p>`;
             box.appendChild(div);
             box.scrollTop = box.scrollHeight;
         }
