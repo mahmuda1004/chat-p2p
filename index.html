@@ -9,8 +9,8 @@
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
     <style>
         .chat-bg { background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png'); background-size: contain; }
-        .bubble-out { background-color: #dcf8c6; border-radius: 12px 0 12px 12px; align-self: flex-end; shadow-sm; }
-        .bubble-in { background-color: white; border-radius: 0 12px 12px 12px; align-self: flex-start; shadow-sm; }
+        .bubble-out { background-color: #dcf8c6; border-radius: 12px 0 12px 12px; align-self: flex-end; }
+        .bubble-in { background-color: white; border-radius: 0 12px 12px 12px; align-self: flex-start; }
     </style>
 </head>
 <body class="bg-[#dadbd3] h-screen flex flex-col items-center">
@@ -59,7 +59,7 @@
 
         const peers = {};
 
-        // 1. SIGNALING: Jalur Kotak Surat Pribadi (Biar Gak Nyangkut)
+        // 1. SIGNALING: Kotak surat per user (Private Signaling)
         db.ref('signals/' + myId).on('child_added', async (snap) => {
             const data = snap.val();
             if (data.type === 'offer') {
@@ -69,9 +69,13 @@
                 await pc.setLocalDescription(ans);
                 db.ref('signals/' + data.from).push({ from: myId, type: 'answer', sdp: ans });
             } else if (data.type === 'answer') {
-                await peers[data.from].pc.setRemoteDescription(new RTCSessionDescription(data.sdp));
+                if (peers[data.from]) {
+                    await peers[data.from].pc.setRemoteDescription(new RTCSessionDescription(data.sdp));
+                }
             } else if (data.type === 'ice') {
-                peers[data.from].pc.addIceCandidate(new RTCIceCandidate(data.ice));
+                if (peers[data.from]) {
+                    peers[data.from].pc.addIceCandidate(new RTCIceCandidate(data.ice));
+                }
             }
             snap.ref.remove();
         });
@@ -81,7 +85,9 @@
         db.ref('presence/' + myId).onDisconnect().remove();
 
         db.ref('presence').on('child_added', (snap) => {
-            if (snap.key !== myId && !peers[snap.key]) setupPeer(snap.key, true);
+            if (snap.key !== myId && !peers[snap.key]) {
+                setupPeer(snap.key, true);
+            }
         });
 
         // 3. WEBRTC ENGINE
@@ -108,7 +114,7 @@
 
         function setupDC(dc, peerId) {
             peers[peerId].dc = dc;
-            dc.onopen = () => { updateUI(); console.log("Connected to: " + peerId); };
+            dc.onopen = () => updateUI();
             dc.onclose = () => { delete peers[peerId]; updateUI(); };
             dc.onmessage = (e) => {
                 const msg = JSON.parse(e.data);
@@ -126,7 +132,9 @@
             const inp = document.getElementById('msgInp');
             if (!inp.value.trim()) return;
             const msg = { u: myName, t: inp.value };
-            Object.values(peers).forEach(p => p.dc?.readyState === 'open' && p.dc.send(JSON.stringify(msg)));
+            Object.values(peers).forEach(p => {
+                if (p.dc?.readyState === 'open') p.dc.send(JSON.stringify(msg));
+            });
             appendMsg(myName, inp.value, 'outbound');
             inp.value = "";
         }
@@ -135,8 +143,10 @@
             const box = document.getElementById('chatBox');
             const div = document.createElement('div');
             div.className = `${side === 'outbound' ? 'bubble-out' : 'bubble-in'} p-2 max-w-[85%] mb-2 flex flex-col shadow-sm`;
-            div.innerHTML = `<span class="text-[10px] font-bold ${side === 'outbound' ? 'text-green-700' : 'text-blue-700'}">${user}</span>
-                             <p class="text-[13px]">${text}</p>`;
+            div.innerHTML = `
+                <span class="text-[10px] font-bold ${side === 'outbound' ? 'text-green-700' : 'text-blue-700'}">${user}</span>
+                <p class="text-[13px]">${text}</p>
+            `;
             box.appendChild(div);
             box.scrollTop = box.scrollHeight;
         }
